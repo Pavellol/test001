@@ -1,0 +1,1557 @@
+using Microsoft.VisualBasic;
+using Telegram.Bot;
+using Telegram.Bot.Exceptions;
+//using Telegram.Bot.Extensions.Polling;
+using Telegram.Bot.Polling;
+using Telegram.Bot.Types;
+using Telegram.Bot.Types.Enums;
+using Telegram.Bot.Types.ReplyMarkups;
+using Microsoft.Data.Sqlite;
+using System;
+using System.IO;
+using System.Threading;
+using Telegram.Bot.Types.InputFiles;
+using Telegram.Bot.Requests.Abstractions;
+using System.Timers;
+using Newtonsoft.Json.Linq;
+using System.Data.Common;
+using System.Text.RegularExpressions;
+
+//попробуй реализовать полностью через кнопки бота запрос !!!
+
+namespace TgBot
+{
+    internal class Programm
+    {
+        //public static SQLiteConnection DB; // Переменная для SQL
+        public static ITelegramBotClient botClient { get; set; } =
+            new TelegramBotClient("5671400176:AAFVG9763O-Tq1YZM_5CEx6P12v3DL72qX0");
+
+        static string[] rsMenu = new string[] { "🏆Заказ cеминаров", "ℹ️Информация о подкомитете", "🔌Подключиться к рассылке", "⬅️ПРС" };
+        // семинары ПРС
+        static string[] seminarNamesArray = new string[] {
+            "1.🔥РС- с чего начать\n", "2.🔥Шаги АН 👣\n", "3.🔥Традиции АН\n",
+            "4.🔥Спонсорство🙏🏻\n","5.🔥Структура обслуживания в АН\U0001f9e9\n","6.🔥Ведущий собрания АН🏫\n",
+            "7.🔥Хищническое поведение в АН 🐊\n", "8.🔥Тёмная сторона в служении🌒\n"};
+        //Юбилей 33 года
+        static string[] anniversaryVakantArray = { "Свободные вакансии" };
+        //Меню подкомитетов
+        static string[] subcommitteesMenu = new string[] { "🥋ПРС", "⬅️ПРС" };
+        //Главное меню
+        static string[] mainMenu = new string[] { "⚙️Подкомитеты", "🕰Расписание групп", "ℹ️Что такое АН?", "🆒Юбилей 33 года" };
+        //Список групп
+        static string[] gruopNamesArray = new string[] { 
+            /*"9:00 Пробуждение", "14:00 День", "16:00/21:00 Купчино","17:00/17:30 3-й район",
+            "18:30 ВолNA", "18:30 Для девочек", "19:00/18:00 Кирпичи","19:00 На литейном",
+            "19:00 Правый берег", "19:30 Просвет", "20:00 Гражданка", "20:00 Ржевка",
+            "20:00 Точка","21:00 ВесNA","21:00 Хронь","21:45 Na ночь"*/
+            "Пробуждение☀️", "День🌝", "Купчино","3-й район",
+            "ВолNA🌊", "Для девочек🙎‍♀️", "Кирпичи🧱","На литейном⛪️",
+            "Правый берег", "Просвет", "Гражданка", "Ржевка",
+            "Точка","ВесNA","Хронь","Na ночь🌘"
+        };
+
+        static string[] gruopNamesForSeminarsArray = new string[] { 
+            /*"9:00 Пробуждение", "14:00 День", "16:00/21:00 Купчино","17:00/17:30 3-й район",
+            "18:30 ВолNA", "18:30 Для девочек", "19:00/18:00 Кирпичи","19:00 На литейном",
+            "19:00 Правый берег", "19:30 Просвет", "20:00 Гражданка", "20:00 Ржевка",
+            "20:00 Точка","21:00 ВесNA","21:00 Хронь","21:45 Na ночь"*/
+            "🏆Заказ cеминаров",
+            "Заказать семинарна гр. Пробуждение☀️", "Заказать семинар на гр. День🌝",
+            "Заказать семинар на гр. Купчино","Заказать семинар на гр. 3-й район",
+            "Заказать семинар на гр. ВолNA🌊", "Заказать семинар на гр. Для девочек🙎‍♀️",
+            "Заказать семинар на гр. Кирпичи\U0001f9f1","Заказать семинар на гр. На литейном⛪️",
+            "Заказать семинар на гр. Правый берег", "Заказать семинар на гр. Просвет",
+            "Заказать семинар на гр. Гражданка", "Заказать семинар на гр. Ржевка",
+            "Заказать семинар на гр. Точка","Заказать семинар на гр. ВесNA",
+            "Заказать семинар на гр. Хронь","Заказать семинар на гр. Na ночь"
+        };
+
+        // Выбор числа
+        static string[] workDateSeminarArray = new string[]
+        {
+            "Семинар на 1-ое число🗓","Семинар на 2-ое число🗓","Семинар на 3-е число🗓","Семинар на 4-ое число🗓",
+            "Семинар на 5-ое число🗓","Семинар на 6-ое число🗓","Семинар на 7-ое число🗓","Семинар на 8-ое число🗓",
+            "Семинар на 9-ое число🗓","Семинар на 10-ое число🗓","Семинар на 11-ое число🗓","Семинар на 12-ое число🗓",
+            "Семинар на 13-ое число🗓","Семинар на 14-ое число🗓","Семинар на 15-ое число🗓","Семинар на 16-ое число🗓",
+            "Семинар на 17-ое число🗓","Семинар на 18-ое число🗓","Семинар на 19-ое число🗓","Семинар на 20-ое число🗓",
+            "Семинар на 21-ое число🗓","Семинар на 22-ое число🗓","Семинар на 23-е число🗓","Семинар на 24-ое число🗓",
+            "Семинар на 25-ое число🗓","Семинар на 26-ое число🗓","Семинар на 27-ое число🗓","Семинар на 28-ое число🗓",
+            "Семинар на 29-ое число🗓","Семинар на 30-ое число🗓","Семинар на 31-ое число🗓"
+        };
+
+        //Кнопки времени
+        static string[] timeNamesRequest = new string[] {
+            "🕐10:00-11:00", "🕐11:00-12:00", "🕐12:00-13:00",
+            "🕓13:00-14:00", "🕓14:00-15:00",
+            "🕓15:00-16:00", "🕓16:00-17:00", "🕟18:00-19:00",
+            "🕟19:00-20:00", "🕟20:00-21:00","🕟21:00-22:00" };
+        //Айди админа для пересылки запроса
+        string necessaryIdAdmin = "-842563538";
+        /*public ref string idNeedRef = ref idNeed;*/
+        //Массив для развязки расписания групп
+        static string[] sheduleStruct = new string[] { "гр. в Санкт-Петерубрге", "гр. в Лен.области", "🪜На главную" };
+        //Массив запросов пользователя
+        static string[] userRequest = new string[4];
+        private static async Task Main(string[] args)
+        {
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            //var botClient = new TelegramBotClient("5671400176:AAFVG9763O-Tq1YZM_5CEx6P12v3DL72qX0");
+            //Переменная ТГ бота
+            using var cts = new CancellationTokenSource();
+            //Настройки получения обновлений
+            var receiverOptions = new ReceiverOptions
+            {
+                AllowedUpdates = { }
+            };
+            //Функция где мы это компонуем и получаем обновления от Телеграм
+            botClient.StartReceiving(
+                HandleUpdatesAsync,//метод, Обработка обновлений бота
+                HandleErrorAsync,//метод обработки ошибок
+                receiverOptions,//настройки получения обновлений
+                cancellationToken: cts.Token);//токен отмены
+
+            var me = await botClient.GetMeAsync();
+
+            Console.WriteLine($"Начал работу c @{me.Username}");
+
+            Console.ReadLine();
+
+            cts.Cancel();//отмена токена
+                         //обработка событий
+
+            async Task HandleUpdatesAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
+            {
+                if (update.Type == UpdateType.Message && update?.Message?.Text != null)
+                {
+                    await HandleMessage(botClient, update.Message);
+                    return;
+                }
+
+                /* if (update.Type == UpdateType.CallbackQuery)
+                 {
+                     await HandleCallbackQuery(botClient, update.CallbackQuery);
+                     return;
+                 }*/
+            }
+            
+            Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
+            {
+                var ErrorMessage = exception switch
+                {
+                    ApiRequestException apiRequestException
+                        => $"Telegram API Error:\n[{apiRequestException.ErrorCode}]\n{apiRequestException.Message}",
+                    _ => exception.ToString()
+                };
+
+                Console.WriteLine(ErrorMessage);
+                return Task.CompletedTask;
+            }
+
+            async Task HandleMessage(ITelegramBotClient botClient, Message message)
+            {
+                //id в пересылаемый чат
+                
+                // меню ПРС
+                string[] seminarRequest = new string[3];
+                //главная страница
+                if (message.Text == "/start" || message.Text == "🪜На главную")
+                {
+
+                    await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                        "🤖Добро пожаловать.\n" +
+                        "🤖Я РС бот Анонимных наркоманов Санкт-Петерубрга.\n");
+
+                    ReplyKeyboardMarkup keyboard = new(
+                        new[]
+                    {
+                                new KeyboardButton[] {mainMenu[0]},
+                                new KeyboardButton[] {mainMenu[1]},
+                                new KeyboardButton[] {mainMenu[2]},
+                                new KeyboardButton[] {mainMenu[3]},
+                    })
+                    {
+                        ResizeKeyboard = true
+                    };
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Выберите клавишу:", replyMarkup: keyboard);
+                    return;
+                }
+                //Юбилей 33 года
+                if (message.Text == mainMenu[3])
+                {
+                    await anniversaryAsync(botClient, message);
+                    return;
+                }
+                //anniversaryVakantArray[0]
+                if (message.Text == anniversaryVakantArray[0])
+                {
+                    await anniversaryVakantAsync(botClient, message);
+                    return;
+                }
+                //Что такое АН?
+                if (message.Text == mainMenu[2])
+                {
+                    await WhatThisAnAsync(botClient, message);
+                    return;
+                }
+                //Развязка по расписанию групп в
+                if (message.Text == mainMenu[1])
+                {
+                    await PrintSheduleGroupAsync(botClient, message);
+                    return;
+                }
+
+                //Расписание групп в Питере
+                if (message.Text == sheduleStruct[0])
+                {
+                    await PrintScheduleGroupInSaintPetersburgAsync(botClient, message);
+                    return;
+                }
+                
+                for (int i = 0; i < gruopNamesArray.Length; i++)
+                {
+                    if(message.Text == gruopNamesArray[i])
+                    {
+                        await PrintScheduleGroupInSaintPetersburg1Async(botClient, message);
+                        return;
+                    }
+                }
+
+                //начало ветки подкомитетов
+                if (message.Text == mainMenu[0])
+                {
+                    ReplyKeyboardMarkup keyboard = new(
+                        new[]
+                            {
+                             new KeyboardButton[] {subcommitteesMenu[0]},
+                             new KeyboardButton[] {"🪜На главную"},
+
+                            })
+                    {
+                        ResizeKeyboard = true
+                    };
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Выберите клавишу:", replyMarkup: keyboard);
+                    return;
+                }
+
+                long someUserChatId = 000000000000;
+
+                //подключение к рассылке
+                if (message.Text == rsMenu[2])
+                {
+                    await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                         "https://t.me/naspb12\n" +
+                         "🤖Перейдите ☝🏻\n");
+                    return;
+                }
+                //Информация об РС
+                if (message.Text == rsMenu[1])
+                {
+                    await PrintInfoAboutRsAsync(botClient, message);
+                    return;
+                }
+                //Информация о подкомитете                
+                if (message.Text == rsMenu[0])
+                {
+                    await PrintSeminarOfRsAsync(botClient, message);
+                    return;
+                }
+                //заказать семинар
+                for (int i = 0; i < seminarNamesArray.Length; i++)
+                {
+                    if (message != null && string.Equals(message.Text, seminarNamesArray[i].Replace("\n", "")))
+                    {
+                        await PrintNamesGroupForSeminarsAsync(botClient, message);
+
+                        userRequest[0] = message.Text;
+                        return;
+                    }
+                }
+
+                /*if (message != null && string.Equals(message.Text, seminarNamesArray[0].Replace("\n", "")))                
+                {
+                    await PrintNamesGroupForSeminarsAsync(botClient, message);
+                    return;
+                }*/
+
+                //Развязка ПРС                
+                if (message.Text == subcommitteesMenu[0] || message.Text == subcommitteesMenu[1])
+                {
+                    await PrintPrsAsync(botClient, message);
+                    return;
+                }
+                //Заказать семинар на указанное время
+                for (int i = 0; i < gruopNamesForSeminarsArray.Length; i++)
+                {
+                    if (message.Text == gruopNamesForSeminarsArray[i])
+                    {
+                        await timeNamesforSeminarAsync(botClient, message);
+                        userRequest[1] = message.Text;
+                        return;
+                    }
+                }
+                //Отослать человеку массив собранных данных по заказау семинара (Семинар, Группа, Время)
+                for (int i = 0; i < timeNamesRequest.Length; i++)
+                {
+                    if (message.Text == timeNamesRequest[i])
+                    {
+                        userRequest[2] = message.Text;
+                        await SendASeminarRequest(botClient, message);
+                        return;
+                    }
+                }
+
+                for (int i = 0; i < workDateSeminarArray.Length; i++)
+                {
+                    if (message.Text == workDateSeminarArray[i])
+                    {
+                        userRequest[3] = message.Text;
+                        await SendDataSeminarRequest(botClient, message);
+                        return;
+                    }
+                }
+                return;
+            }
+        }
+
+        //Информация об РС
+        private static async Task<string> PrintInfoAboutRsAsync(ITelegramBotClient botClient, Message message)
+        {
+
+            // Напишет в чат 
+            await botClient.SendTextMessageAsync(message.Chat.Id,
+            "🤖Главными  целями Подкомитета по Развитию Сообщества являются:Оказание помощи новым группам\n" +
+            "🤖Поддержка существующих групп АН в улучшении эффективности служения и несения вести АН\n " +
+            "🤖Содействовать развитию местности в целом Мы благодарны за то, что имеем, возможность служить в АН. \n" +
+            "🤖Когда-то мы бескорыстно получили дар выздоровления, теперь также бескорыстно отдаем.\n");
+            //подготовка кнопок на дисплей
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {
+                        new KeyboardButton[] {"⬅️ПРС"},
+                })
+            {
+                ResizeKeyboard = true
+            };
+            //Выкатить кнопки на дисплей
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Пожалуйста перейдите обратно", replyMarkup: keyboard);
+
+            return "";
+        }
+        //Расписание групп
+        private static async Task<string> PrintScheduleGroupInSaintPetersburgAsync(ITelegramBotClient botClient, Message message)
+        {
+            var allGroupNames = "🤖Cписок групп:\n\n";
+
+            for (int j = 0; j < gruopNamesArray.Length; j++)
+            {
+                allGroupNames += (gruopNamesArray[j]+"\n");
+            }
+            await botClient.SendTextMessageAsync(message.Chat.Id, allGroupNames);
+            //подготовка кнопок на дисплей
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {
+                    new KeyboardButton[] {"🪜На главную"},
+                    new KeyboardButton[] {gruopNamesArray[0]},
+                    new KeyboardButton[] {gruopNamesArray[1]},
+                    new KeyboardButton[] {gruopNamesArray[2]},
+                    new KeyboardButton[] {gruopNamesArray[3]},
+                    new KeyboardButton[] {gruopNamesArray[4]},
+                    new KeyboardButton[] {gruopNamesArray[5]},
+                    new KeyboardButton[] {gruopNamesArray[6]},
+                    new KeyboardButton[] {gruopNamesArray[7]},
+                    new KeyboardButton[] {gruopNamesArray[8]},
+                    new KeyboardButton[] {gruopNamesArray[9]},
+                    new KeyboardButton[] {gruopNamesArray[10]},
+                    new KeyboardButton[] {gruopNamesArray[11]},
+                    new KeyboardButton[] {gruopNamesArray[12]},
+                    new KeyboardButton[] {gruopNamesArray[13]},
+                    new KeyboardButton[] {gruopNamesArray[14]},
+                    new KeyboardButton[] {gruopNamesArray[15]},
+                    new KeyboardButton[] {"\U0001fa9cНа главную"},
+                })
+            {
+                ResizeKeyboard = true
+            };
+            //Выкатить кнопки на дисплей
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Пожалуйста выберите нужную вам группу", replyMarkup: keyboard);
+            return "";
+        }
+        //Cписок семинаров
+        private static async Task<string> PrintSeminarOfRsAsync(ITelegramBotClient botClient, Message message)
+        {
+            var allSeminarNames = "🤖Cписок семинаров:\n\n";
+
+            for (int i = 0; i < seminarNamesArray.Length; i++)
+            {
+                allSeminarNames += seminarNamesArray[i];
+            }
+            await botClient.SendTextMessageAsync(message.Chat.Id, allSeminarNames);
+
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                    {
+                        new KeyboardButton[] {"⬅️ПРС"},
+                        new KeyboardButton[] {seminarNamesArray[0]},
+                        new KeyboardButton[] {seminarNamesArray[1], seminarNamesArray[2]},
+                        new KeyboardButton[] {seminarNamesArray[3]},
+                        new KeyboardButton[] {seminarNamesArray[4]},
+                        new KeyboardButton[] {seminarNamesArray[5]},
+                        new KeyboardButton[] {seminarNamesArray[6]},
+                        new KeyboardButton[] {seminarNamesArray[7]},
+                        new KeyboardButton[] {"⬅️ПРС"},
+                    })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "Вы можете листать вниз", replyMarkup: keyboard);
+            return "";
+        }
+        //Что такое АН?
+        private static async Task<string> WhatThisAnAsync(ITelegramBotClient botClient, Message message)
+        {
+            await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                        "Анонимные Наркоманы – это сообщество мужчин и женщин, для которых наркотики стали главной проблемой. Выздоравливающие зависимые - регулярно собираются, чтобы помочь друг другу воздержаться от наркотиков. Эта программа предусматривает полное воздержание от всех видов химических веществ, изменяющих сознание. Единственным условием для вступление в ряды АН – является желание бросить принимать наркотики. АН не дает членам обязательных инструкций, но предлагает отказаться от предубеждений и дать себе шанс. Эта программа основана на принципах, изложенных так просто, что им можно следовать в повседневной жизни. Самое главное в них то, что они работают. АН не связаны ни с какими другими организациями. Нет вступительных или членских взносов, участники не обязаны подписывать обеты или давать кому-либо устные обещания. АН не связаны ни с какими политическими, религиозными, правоохранительными или коммерческими структурами и никто не контролирует деятельность сообщества. Этими словами Сообщество встречает своих участников уже более 50 лет.\n\n" +
+                        "Программа выздоровления Анонимных Наркоманов это последовательность личных поступков, известная как «Двенадцать Шагов» включает признание имеющейся проблемы, обращение за помощью, правдивую самооценку, доверительный рассказ о себе, возмещение причиненного окружающим ущерба и помощь желающим выздороветь наркоманам. Важнее всего в программе – акцент на том, что обозначается как «духовное пробуждение».\n\n" +
+                        "Первое, что обеспечивает Анонимные Наркоманы это собрания групп АН.Каждая группа самоуправляемая, руководствуясь принципами(традициями), общими для всего Сообщества, и описанными в наших книгах.Собрания могут быть «открытыми», где может присутствовать любой человек, или «закрытыми», куда допускаются лишь те, кто сам имеет проблему с наркотиками.\n\n" +
+                        "АН понимают, что добились значительных успехов в решении собственных проблем с зависимостью, но отнюдь не утверждают, что имеют программу, подходящую для всех наркоманов и во всех обстоятельствах, или что их психотерапевтические представления должны быть приняты всеми. Если Анонимные Наркоманы могут быть полезны для наркоманов в вашей организации или в вашем сообществе, то они всегда готовы оказать свою помощь.\n\n");
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                    {
+                            new KeyboardButton[] {"\U0001fa9cНа главную"},
+                    })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Вернитесь пожалуйста обратно", replyMarkup: keyboard);
+            return "";
+        }
+        private static async Task<string> timeNamesforSeminarAsync(ITelegramBotClient botClient, Message message)
+        {
+            ReplyKeyboardMarkup keyboardTime = new(
+                new[]
+                    {
+                        new KeyboardButton[] {rsMenu[0]},
+                        new KeyboardButton[] {timeNamesRequest[0]},
+                        new KeyboardButton[] {timeNamesRequest[1]},
+                        new KeyboardButton[] {timeNamesRequest[2]},
+                        new KeyboardButton[] {timeNamesRequest[3]},
+                        new KeyboardButton[] {timeNamesRequest[4]},
+                        new KeyboardButton[] {timeNamesRequest[5]},
+                        new KeyboardButton[] {timeNamesRequest[6]},
+                        new KeyboardButton[] {timeNamesRequest[7]},
+                        new KeyboardButton[] {timeNamesRequest[8]},
+                        new KeyboardButton[] {timeNamesRequest[9]},
+                        new KeyboardButton[] {timeNamesRequest[10]},
+                        new KeyboardButton[] {rsMenu[0]},
+                     })
+            {
+                ResizeKeyboard = true
+            };
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Выберите время:", replyMarkup: keyboardTime);
+            return "";
+        }
+
+        //Развязка расписания групп
+        private static async Task<string> PrintSheduleGroupAsync(ITelegramBotClient botClient, Message message)
+        {
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {
+                    new KeyboardButton[] {sheduleStruct[0]},
+                    new KeyboardButton[] {sheduleStruct[1]},
+                    new KeyboardButton[] {sheduleStruct[2]},
+                })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Выберите клавишу:", replyMarkup: keyboard);
+            return "";
+        }
+
+        private static async Task<string> PrintPrsAsync(ITelegramBotClient botClient, Message message)
+        {
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {
+                    new KeyboardButton[] {rsMenu[0]},
+                    new KeyboardButton[] {rsMenu[1]},
+                    new KeyboardButton[] {rsMenu[2]},
+                    new KeyboardButton[] {mainMenu[0]},
+                })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Выберите клавишу:", replyMarkup: keyboard);
+            return "";
+
+        }
+        //Заказ семинаров
+        private static async Task<string> PrintNamesGroupForSeminarsAsync(ITelegramBotClient botClient, Message message)
+        {
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {
+                    new KeyboardButton[] { "⬅️ПРС"},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[0]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[1]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[2]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[3]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[4]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[5]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[6]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[7]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[8]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[9]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[10]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[11]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[12]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[13]},
+                    new KeyboardButton[] { gruopNamesForSeminarsArray[14]},
+
+                })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Выберите группу:", replyMarkup: keyboard);
+            return "";
+
+        }
+        //Кнопки чисел для семинаров
+        private static async Task<string> SendASeminarRequest(ITelegramBotClient botClient, Message message)
+        {           
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {
+                    new KeyboardButton[] { workDateSeminarArray[0],workDateSeminarArray[1]},
+                    new KeyboardButton[] { workDateSeminarArray[2],workDateSeminarArray[3]},
+                    new KeyboardButton[] { workDateSeminarArray[4],workDateSeminarArray[5]},
+                    new KeyboardButton[] { workDateSeminarArray[6],workDateSeminarArray[7] },
+                    new KeyboardButton[] { workDateSeminarArray[8],workDateSeminarArray[9]},
+                    new KeyboardButton[] { workDateSeminarArray[10],workDateSeminarArray[11]},
+                    new KeyboardButton[] { workDateSeminarArray[12],workDateSeminarArray[13]},
+                    new KeyboardButton[] { workDateSeminarArray[14],workDateSeminarArray[15]},
+                    new KeyboardButton[] { workDateSeminarArray[16],workDateSeminarArray[17]},
+                    new KeyboardButton[] { workDateSeminarArray[18],workDateSeminarArray[19]},
+                    new KeyboardButton[] { workDateSeminarArray[20],workDateSeminarArray[21]},
+                    new KeyboardButton[] { workDateSeminarArray[22],workDateSeminarArray[23]},
+                    new KeyboardButton[] { workDateSeminarArray[24],workDateSeminarArray[25]},
+                    new KeyboardButton[] { workDateSeminarArray[26],workDateSeminarArray[27]},
+                    new KeyboardButton[] { workDateSeminarArray[28],workDateSeminarArray[29]},
+                    new KeyboardButton[] { workDateSeminarArray[30]},                    
+                })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Выберите нужное число", 
+                replyMarkup: keyboard);
+
+            
+            return "";
+        }
+        //отправить запрос админу
+        private static async Task<string> SendDataSeminarRequest(ITelegramBotClient botClient, Message message)
+        {
+            string userRequestSeminar = "\n";
+
+            for (int i = 0; i < userRequest.Length; i++)
+            {
+                userRequestSeminar += (userRequest[i]+ Environment.NewLine);
+            }
+
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {
+                    new KeyboardButton[] { rsMenu[0]},
+                })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Хорошо, для дальнейшей информации с вами свяжутся в течении 72-ух часов",
+                replyMarkup: keyboard);
+
+            await botClient.SendTextMessageAsync(-842563538, userRequestSeminar);
+            await botClient.ForwardMessageAsync(-842563538, message.Chat.Id, message.MessageId);
+            return "";
+        }
+        //Расписание собраний в Санкт-Петербурге
+        private static async Task<string> PrintScheduleGroupInSaintPetersburg1Async(ITelegramBotClient botClient, Message message)
+        {
+            if ( message.Text== gruopNamesArray[0])
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "https://yandex.ru/maps/2/saint-petersburg/?ll=30.285059%2C59.946836&mode=usermaps&source=constructorStatic&um=constructor%3Axw9X6IR_szZsBGGa9vfM_MR3qM3J1Fx3&z=18.3\n" +
+                                       "🤖Перейдите ☝🏻\n");
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "Группа \"Пробуждение\" - м.Спортивная, Кадетская линия 29\r\n" +
+                                       "Рабочие собрания - вторая среда месяца после основного собрания.\n" +
+                                       "ПН\t• 09:00 - 10:00\t День Базового текста\n" +
+                                       "ВТ\t• 09:00 - 10:00\t День свободных тем\n" +
+                                       "СР\t• 09:00 - 10:00\t День ip и брошюр по служению\n" +
+                                       "ЧТ\t• 09:00 - 10:00\t Традиции\n" +
+                                       "ПТ\t• 09:00 - 10:00\t Руководство по шагам\n" +
+                                       "СБ\t• 09:00 - 10:00\t Открытые собрания\n" +
+                                       "ВС\t• 09:00 - 10:00\t День чтения Жить чистым\n");
+            }
+            else if (message.Text == gruopNamesArray[1])
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                      "https://yandex.ru/maps/2/saint-petersburg/?ll=30.309548%2C59.920728&mode=usermaps&source=constructorStatic&um=constructor%3AS5rsKLVALKS3nMyT8hoVRrU-mHSkUT09&z=14\n" +
+                                      "🤖Перейдите ☝🏻\n");
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "Группа \"День\" проводит собрания по адресу: Б.Подьяческая, д.34 (малый зал), м.Садовая/Сенная\r\n" +
+                                       "Рабочие собрания в 15:30 каждое 2е и 4е воскресенье месяца\n" +
+                                       "ПН\t• 14:00 -15:00\tДень буклетов (IP)\n" +
+                                       "ВТ\t• 14:00 -15:00\tДень Шагов\n" +
+                                       "СР\t• 14:00 -15:00\tДень Традиций\n" +
+                                       "ЧТ\t• 14:00 -15:00\tДень изучения книги \"Жить чистыми\"\n" +
+                                       "ПТ\t• 14:00 -15:00\tНовичку\n" +
+                                       "СБ\t• 14:00 -15:00\tСпикерское собрание\n" +
+                                       "ВС\t• 14:00 -15:00\tОткрытое собрание / День спонсора\n");
+            }     
+            else if (message.Text == gruopNamesArray[2])
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                      "https://yandex.ru/maps/2/saint-petersburg/?ll=30.378712%2C59.855651&mode=usermaps&source=constructorStatic&um=constructor%3A94e30006ecac1aa2f7cbf2f3f658b5efe0e64f163fea257e809bf738823b5217&z=14\n" +
+                                      "🤖Перейдите ☝🏻\n");
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "Группа \"Купчино\" - пр. Славы, д. 4 (после арки сразу направо, вывеска «Автошкола», второй этаж, последняя дверь налево)\r\n" +
+                                       "Рабочее собрание 2 и 4 среда после основного собрания 22:15\n" +
+                                       "ПН\t• 15:00-16:00\t 1 и 3 пн спикерские\n" +
+                                       "ВТ\t• 15:00-16:00\tДень Шагов\n" +
+                                       "СР\t• 15:00-16:00\tДень служения\n" +
+                                       "ЧТ\t• 15:00-16:00\tБазовый текст АН\"\n" +
+                                       "ПТ\t• 15:00-16:00\tДень традиций\n" +
+                                       "СБ\t• 15:00-16:00\tСвободные темы\n" +
+                                       "ВС\t• 15:00-16:00\tОткрытое собрание\n");
+            }
+            else if (message.Text == gruopNamesArray[3])
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                      "https://yandex.ru/maps/2/saint-petersburg/?ll=30.389940%2C60.005605&mode=usermaps&source=constructorStatic&um=constructor%3Axw9X6IR_szZsBGGa9vfM_MR3qM3J1Fx3&z=10\n" +
+                                      "🤖Перейдите ☝🏻\n");
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "Собрания группы \"3-й Район\" проходят по адресу: м.Спортивная, ВО, Кадетская линия, д.29, дальняя комната.\r\n" +
+                                       "Рабочее собрание 1 и 3 суббота в 19:30 в дальняя комната.\n" +
+                                       "ПН\t• 17:30 - 18:30\tСпикерское собрание 1 и 3 ПН месяца \n" +
+                                       "День свободных тем 2,4,5 ПН месяца" +
+                                       "ВТ\t• 17:00 - 18:00\tДень Шагов\n" +
+                                       "СР\t• 17:00 - 18:00\t Открытое собрание \n" +
+                                       "ЧТ\t• 17:00 - 18:00\tДень традиций\n" +
+                                       "ПТ\t• 17:30 - 18:30\tДень служения\n" +
+                                       "СБ\t• 16:00 - 17:00*\tДень свободных тем\n" +
+                                       "ВС\t• 17:30 - 18:30\tДень Лозунга\n" +
+                                       "* - 2 и 4 субботу собрание + семинары.\n" +
+                                       "- 1, 3, 5 суббота - собрание \"Лото\".");
+
+            }
+            else if (message.Text == gruopNamesArray[4])
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                     "https://yandex.ru/maps/2/saint-petersburg/house/kirishskaya_ulitsa_2a/Z0kYcgVkSk0CQFhqfXxyc3VkZw==/?ll=30.424596%2C60.032916&z=17.6\n" +
+                                     "🤖Перейдите ☝🏻\n");
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "Группа \"VolNA\" проходит по адресу: ул. Киришская, 2А, 8-ой этаж, офис 804 в помещении группы Гражданка \r\n" +
+                                       "Рабочее собрание проводится в 1 и 3 понедельник месяца в 18.00.\n" +
+                                       "ПН\t• 18:30 - 19:30\n" +
+                                       "ПТ\t• 17:30 - 18:30\n" +
+                                       "СБ\t• 16:00 - 17:00\n" +
+                                       "ВС\t• 17:30 - 18:30\n");
+            }
+            else if (message.Text == gruopNamesArray[5])
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                     "https://yandex.ru/maps/2/saint-petersburg/?ll=30.309548%2C59.920728&mode=usermaps&source=constructorStatic&um=constructor%3AS5rsKLVALKS3nMyT8hoVRrU-mHSkUT09&z=14\n" +
+                                     "🤖Перейдите ☝🏻\n");
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "Группа \"Для девочек\" -  Б. Подьяческая, д. 34 (м) Садовая (первая комната у входа)\r\n" +                                       
+                                       "ПН\t• 18:30 -19:30\n" +
+                                       "ВТ\t• 18:30 -19:30\n" +
+                                       "СР\\t• 15:30 -16:30\n" +
+                                       "ЧТ\t• 15:30 -16:30\n" +
+                                       "ПТ\t• 19:30 -20:30\n" +
+                                       "ВС\t• 15:30 -16:30\n");
+            }
+            else if (message.Text == gruopNamesArray[6])
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                     "https://yandex.ru/maps/2/saint-petersburg/?ll=30.389940%2C60.005605&mode=usermaps&source=constructorStatic&um=constructor%3Axw9X6IR_szZsBGGa9vfM_MR3qM3J1Fx3&z=10\n" +
+                                     "🤖Перейдите ☝🏻\n");
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "Группа \"Кирпичи\" В.О. Кадетская линия д.29 (во дворе) (м) Спортивная или Василеостровская\r\n" +
+                                       "В дальней комнате ежедневно проходят тематические собрания по шагам.\r\nКаждую среду - спикерское по шагам и традициям.\n" +
+                                       "Время ZOOM собраний смотрите в расписании Кирпичи ОНЛАЙН: https://na-spb.ru/gruppy/all-groups/gruppy-onlajn/kirpichi-onlajn \r\nрабочее собрание 2 и 4 вторник в 20:30\n" +
+                                       "ПН\t \t• 19:00-20:00 \t Лозунги\n" +
+                                       "ВТ\t• 19:00-20:00 \t Открытое собрание\n" +
+                                       "СР\t• 19:00-20:00 \t День Шагов\n" +
+                                       "ЧТ\t• 19:00-20:00 \t День Служения\n" +
+                                       "ПТ\t• 14:30-15:30 19:00-20:00 \t День Традиций\n" +
+                                       "CБ\t• 14:30-15:30 18:00-19:00 \tОткрытое собрание\n" +
+                                       "ВС\t• 14:30-15:30 19:00-20:00 \tСпикерское собрание\n");
+            }
+            else if (message.Text == gruopNamesArray[7])
+            {
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                                     "https://yandex.ru/maps/2/saint-petersburg/?ll=30.389940%2C60.005605&mode=usermaps&source=constructorStatic&um=constructor%3Axw9X6IR_szZsBGGa9vfM_MR3qM3J1Fx3&z=10\n" +
+                                                     "🤖Перейдите ☝🏻\n");
+                await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                       "Группа \"Кирпичи\" В.О. Кадетская линия д.29 (во дворе) (м) Спортивная или Василеостровская\r\n" +
+                                       "В дальней комнате ежедневно проходят тематические собрания по шагам.\r\nКаждую среду - спикерское по шагам и традициям.\n" +
+                                       "Время ZOOM собраний смотрите в расписании Кирпичи ОНЛАЙН: https://na-spb.ru/gruppy/all-groups/gruppy-onlajn/kirpichi-onlajn \r\nрабочее собрание 2 и 4 вторник в 20:30\n" +
+                                       "ПН\t \t• 19:00-20:00 \t Лозунги\n" +
+                                       "ВТ\t• 19:00-20:00 \t Открытое собрание\n" +
+                                       "СР\t• 19:00-20:00 \t День Шагов\n" +
+                                       "ЧТ\t• 19:00-20:00 \t День Служения\n" +
+                                       "ПТ\t• 14:30-15:30 19:00-20:00 \t День Традиций\n" +
+                                       "CБ\t• 14:30-15:30 18:00-19:00 \tОткрытое собрание\n" +
+                                       "ВС\t• 14:30-15:30 19:00-20:00 \tСпикерское собрание\n");
+            }
+            else if (message.Text == gruopNamesArray[8])
+            {
+
+            }
+            else if (message.Text == gruopNamesArray[9])
+            {
+
+            }
+            else if (message.Text == gruopNamesArray[10])
+            {
+
+            }
+            else if (message.Text == gruopNamesArray[11])
+            {
+
+            }
+            else if (message.Text == gruopNamesArray[12])
+            {
+
+            }
+            else if (message.Text == gruopNamesArray[13])
+            {
+
+            }
+            else if (message.Text == gruopNamesArray[14])
+            {
+
+            }
+            else if (message.Text == gruopNamesArray[15])
+            {
+
+            }
+
+            ReplyKeyboardMarkup keyboard = new(
+            new[]
+                {
+                    new KeyboardButton[] {mainMenu[1]},
+                })
+            {
+                ResizeKeyboard = true
+            };
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Вы можете перейти обратно в расписание групп",
+                replyMarkup: keyboard);
+            return "";
+        }
+        //
+        private static async Task<string> anniversaryAsync(ITelegramBotClient botClient, Message message)
+        {
+            await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                                      "http://xn--2023-f4dlgz9bl5am.xn--p1ai/index.php/mesto-provedeniya\n" +
+                                      "🤖Перейдите ☝🏻\n");
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {                    
+                    new KeyboardButton[] { anniversaryVakantArray[0] },
+                    new KeyboardButton[] { "🪜На главную"},
+                })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "🤖Мето проведения: Севкабель порт.\n" +
+                "Дата проведения: начало мая\n" +
+                "Свободный вход, фудкорты, дискотека!\n" +
+                "\"Мы уже заплатили,что бы быть здесь\"",
+                replyMarkup: keyboard);
+            return "";
+        }
+
+        //
+        private static async Task<string> anniversaryVakantAsync(ITelegramBotClient botClient, Message message)
+        {
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                {
+                    new KeyboardButton[] { "🪜На главную"},
+                })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "Свободные вакансии:\n" +
+                "- Секретарь(ведёт отчётность)\n" +
+                "- Казначей\n" +
+                "- Координатор по расписанию",
+                replyMarkup: keyboard);
+            return "";
+        }
+    }
+}
+    /*if (message.Text == "/start" || message.Text == "На главную")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+            "Добро пожаловать.\n" +
+            "Я РС бот АН СПб.\n");
+
+        ReplyKeyboardMarkup keyboard = new(
+            new[]
+                {
+                    new KeyboardButton[] {"Расписание групп"},
+                    new KeyboardButton[] {"Подкомитеты"},
+                    new KeyboardButton[] {"Что такое АН?"},
+
+                })
+        {
+            ResizeKeyboard = true
+        };
+
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите клавишу:", replyMarkup: keyboard);
+        return;
+    }*/
+
+    /*if (message.Text == "Что такое АН?")
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+            "Анонимные Наркоманы – это сообщество мужчин и женщин, для которых наркотики стали главной проблемой. Выздоравливающие зависимые - регулярно собираются, чтобы помочь друг другу воздержаться от наркотиков. Эта программа предусматривает полное воздержание от всех видов химических веществ, изменяющих сознание. Единственным условием для вступление в ряды АН – является желание бросить принимать наркотики. АН не дает членам обязательных инструкций, но предлагает отказаться от предубеждений и дать себе шанс. Эта программа основана на принципах, изложенных так просто, что им можно следовать в повседневной жизни. Самое главное в них то, что они работают. АН не связаны ни с какими другими организациями. Нет вступительных или членских взносов, участники не обязаны подписывать обеты или давать кому-либо устные обещания. АН не связаны ни с какими политическими, религиозными, правоохранительными или коммерческими структурами и никто не контролирует деятельность сообщества. Этими словами Сообщество встречает своих участников уже более 50 лет.\n\n" +
+            "Программа выздоровления Анонимных Наркоманов это последовательность личных поступков, известная как «Двенадцать Шагов» включает признание имеющейся проблемы, обращение за помощью, правдивую самооценку, доверительный рассказ о себе, возмещение причиненного окружающим ущерба и помощь желающим выздороветь наркоманам. Важнее всего в программе – акцент на том, что обозначается как «духовное пробуждение».\n\n" +
+            "Первое, что обеспечивает Анонимные Наркоманы это собрания групп АН.Каждая группа самоуправляемая, руководствуясь принципами(традициями), общими для всего Сообщества, и описанными в наших книгах.Собрания могут быть «открытыми», где может присутствовать любой человек, или «закрытыми», куда допускаются лишь те, кто сам имеет проблему с наркотиками.\n\n" +
+            "АН понимают, что добились значительных успехов в решении собственных проблем с зависимостью, но отнюдь не утверждают, что имеют программу, подходящую для всех наркоманов и во всех обстоятельствах, или что их психотерапевтические представления должны быть приняты всеми. Если Анонимные Наркоманы могут быть полезны для наркоманов в вашей организации или в вашем сообществе, то они всегда готовы оказать свою помощь.\n\n");
+        ReplyKeyboardMarkup keyboard = new(
+            new[]
+                {
+                        new KeyboardButton[] {"На главную"},
+                })
+        {
+            ResizeKeyboard = true
+        };
+
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите клавишу:", replyMarkup: keyboard);
+        return;
+    }
+    *//**/
+
+
+    //Расписание групп
+
+    /*
+        if (message.Text == "гр. в Санкт-Петерубрге")
+        {
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                    {
+                            new KeyboardButton[] {"гр.Хронь"},
+                            new KeyboardButton[] {"⬅️Расписание групп"},
+                    })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите клавишу:", replyMarkup: keyboard);
+            return;
+        }
+        // Гр. в Санкт-Петербурге
+        if (message.Text == "гр.Хронь")
+        {
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                    {
+                            new KeyboardButton[] {"гр. в Санкт-Петерубрге"},
+
+                    })
+            {
+                ResizeKeyboard = true
+            };
+            await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                "https://yandex.ru/maps/2/saint-petersburg/?ll=30.285352%2C59.946755&mode=routes&rtext=~59.946841%2C30.285241&rtt=mt&ruri=~&source=constructorStatic&um=constructor%3Axw9X6IR_szZsBGGa9vfM_MR3qM3J1Fx3&z=20.4\n"
+                );
+            await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                "Расписание:\n" +
+                "Пн 21:00 - 22:00\n" +
+                "Ср 20:20 - 21:20 1,3,5 среда читаем базовый текст 2,4 среда спикерские\n" +
+                "Пт 21:00 - 22:00 Читаем книгу Жить чистыми\n" +
+                "Сб 21:00 - 22:00 \n" +
+                "Вс 21:00 - 22:00 Открытое собрание\n" +
+            "Рабочие собрания проходят 2 и 4 вторник месяца после основного собрания\n");
+            await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите клавишу:", replyMarkup: keyboard);
+            return;
+
+        }
+
+        if (message.Text == "Фундамент г.Всеволожск")
+        {
+            *//*
+            using (var stream = System.IO.File.OpenRead("E:\\Na\\CS_bot_AN\\Tg_Bot_AN_SPb\\photo\\photo_2020-02-13-20.49.07.png"))
+            {
+                Telegram.Bot.Types.InputFiles.InputOnlineFile iof = new Telegram.Bot.Types.InputFiles.InputOnlineFile(stream);
+                iof.FileName = "photo_2020-02-13-20.49.07.png";
+                var send = await botClient.SendDocumentAsync(new Telegram.Bot.Types.,iof, "Сообщение");
+            }*//*
+
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                "https://yandex.ru/maps/2/saint-petersburg/?ll=30.608418%2C60.003885&mode=usermaps&source=constructorStatic&um=constructor%3A15c42bdd444d77109982da7c675010da381c33469d516207e0017f6095c59d9f&z=17.8\n"
+                );
+            await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                "Расписание:\n" +
+                "Вт 20:20 - 21:20\n" +
+                "Чт 20:20 - 21:20\n" +
+                "Сб 20:20 - 21:20\n" +
+            "Рабочие собрания проходят 2 и 4 вторник месяца после основного собрания\n");
+            ReplyKeyboardMarkup keyboard = new(
+                new[]
+                    {
+                            new KeyboardButton[] {"гр. в Лен.области"},
+                    })
+            {
+                ResizeKeyboard = true
+            };
+
+            await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите клавишу:", replyMarkup: keyboard);
+            return;
+        }*/
+
+    /* if (message.Text == "Подкомитеты" *//*|| message.Text == "Подкомитеты"*//*)
+     {
+         ReplyKeyboardMarkup keyboard = new(
+             new[]
+                 {
+                     new KeyboardButton[] {"✅ПРС", "❌ПБУ"},
+                     //new KeyboardButton[] {"❌ПСО", "❌ЛитКом" },
+                     //new KeyboardButton[] {"❌МДА"},
+                     new KeyboardButton[] {"На главную"},
+
+                 })
+         {
+             ResizeKeyboard = true
+         };
+
+         await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите клавишу:", replyMarkup: keyboard);
+         return;
+     }*/
+
+    /*if (message.Text == ("✅ПРС") || message.Text == "⬅️ПРС")
+    {
+        ReplyKeyboardMarkup keyboard = new(
+            new[]
+                {
+                        new KeyboardButton[] {"Заказ семинаров", "Подключение к рассылке АН СПб"},
+                       *//* new KeyboardButton[] {"Заказ тренингов", "Заказать десант"},*//*
+                        new KeyboardButton[] {"На главную"},
+
+                })
+        {
+            ResizeKeyboard = true
+        };
+
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите клавишу:", replyMarkup: keyboard);
+        return;
+    }
+
+*/
+    /*
+                if (message.Text == "Заказ семинаров")
+                {
+                    //Выдать в чат список семинаров
+                    for (int i = 0; i < 8; i++)
+                    {
+                        await botClient.SendTextMessageAsync(message.Chat.Id, seminarNamesArray[i]);
+                    }
+
+                    //Кнопки семинаров
+                    {
+
+
+                        *//*await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат cписок всех семинаров   
+                        "Список семинаров:\n" +
+                            "1.🔥РС- с чего начать?\n" +
+                            "2.🔥Шаги АН\n" +
+                            "3.🔥Традиции АН\n" +
+                            "4.🔥Спонсорство\n" +
+                            "5.🔥Структура обслуживания в АН\n" +
+                            "6.🔥Ведущий собрания АН\n" +
+                            "7.🔥Хищническое поведение в АН\n" +
+                            "8.🔥Тёмная сторона в служении:\n" +
+                            "9.🆙Стратегическое планирование\n" +
+                            "10.📱Социальные сети\n" +
+                            "11.Служение в АН\n" +
+                            "12.❤️Сопереживание, поддержка и любовь в сообществе\n" +
+                            "13.☀️Ясность нашей вести\n" +
+                            "14.🔗Фасилитатор\n" +
+                            "15.\U0001f94bСеминары для ПГО \n" +
+                            "16.\U0001f94bСлужение ЧРК\n" +
+                            "17.🖋Секретарь группы АН\n" +
+                            "18.💰Самообеспечение от А до Я\n" +
+                            "19.💷Самообеспечение в АН(традиция Седьмая)" +
+                            "20.\U0001f9e9Руководящий принцип - дух наших традиций\n" +
+                            "21.📖Руководство ЛитКомов\n" +
+                                                          "22.Развитие сообщества\n" +
+                                                          "23.Простые истины в служении\n" +
+                                                          "24.Про деньги\n" +
+                                                          "25.Привлечение членов сообщества в служение\n" +
+                                                          "26.Планирование\n" +
+                                                          "27.Новичок в АН\n" +
+                                                          "Мотивация служащих\n" +
+                                                          "28.Лидерство в АН\n" +
+                                                          "Концепции АН\n" +
+                                                          "29.Комуникация и представительство\n" +
+                                                          "30.История появления литературы в России\n" +
+                                                          "31.История денег\n" +
+                                                          "32.История АН\n" +
+                                                          "33.Информационная линия\n" +
+                                                          "34.Заместительная терапия и медикаментозное лечение\n" +
+                                                          "35.Единство в АН\n" +
+                                                          "36.Духовный кризис\n" +
+                                                          "37.Добро пожаловать всем (Традиция третья)\n" +
+                                                          "38.Добро пожаловать в АН\n" +
+                                                          "39.Служение как неотъемлемая часть выздоровления\n" +
+                                                          "40.Вдохновлённые нашей главной целью (Традиция пятая)\n" +
+                                                          "41.Выздоравливая в АН\n" +
+                                                          "42.Бог как каждый из нас понимает его\n" +
+                                                          "43.Атмосфера выздоровления в служении\n" +
+                                                          "44.12 Шагов АН\n" +
+                                                          "45.12 простых истин в служении АН\n" +
+                                                          "46.Выздоравливая в АН\n" +
+                                                          "47.Имидж АН\n" +
+                                                          "48.История БТ\n" +
+                                                          "47.Принцип ротации\n"
+                            );*//*
+                    } // cписок семинаров
+                    ReplyKeyboardMarkup keyboard = new(
+                        new[]
+                            {
+                                    new KeyboardButton[] {"⬅️ПРС"},
+                                    new KeyboardButton[] {"1.🔥РС- с чего начать?"},
+                                    new KeyboardButton[] {"2.🔥Шаги АН","3.🔥Традиции АН"},
+                                    new KeyboardButton[] {"4.🔥Спонсорство"},
+                                    new KeyboardButton[] {"5.🔥Структура обслуживания в АН" },
+                                    new KeyboardButton[] {"6.🔥Ведущий собрания АН" },
+                                    new KeyboardButton[] {"7.🔥Хищническое поведение в АН"},
+                                    new KeyboardButton[] {"8.🔥Тёмная сторона в служении"},
+                                   *//* new KeyboardButton[] {"9.🆙Стратегическое планирование"},
+                                    new KeyboardButton[] {"10.📱Социальные сети", "11.Служение в АН"},
+                                    new KeyboardButton[] {"12.❤️Сопереживание, поддержка и любовь в сообществе"},
+                                    new KeyboardButton[] {"13.☀️Ясность нашей вести", "14.🔗Фасилитатор"},
+                                    new KeyboardButton[] {"15.🥋Семинары для ПГО", "16.🥋Служение ЧРК"},
+                                    new KeyboardButton[] {"17.🖋Секретарь группы АН", },
+                                    new KeyboardButton[] {"18.💰Самообеспечение от А до Я", },
+                                    new KeyboardButton[] {"19.💷Самообеспечение в АН(традиция Седьмая)"},
+                                    new KeyboardButton[] {"20.🧩Руководящий принцип - дух наших традиций"},
+                                    new KeyboardButton[] {"21.📖Руководство ЛитКомов"},
+                                    new KeyboardButton[] {"22.Развитие сообщества"},
+                                    new KeyboardButton[] {"23.Простые истины в служении"},
+                                    new KeyboardButton[] {"24.Про деньги","Принцип ротации"},
+                                    new KeyboardButton[] {"25.Привлечение членов сообщества в служение"},
+                                    new KeyboardButton[] {"26.Планирование","Открыть новую группу"},
+                                    new KeyboardButton[] {"27.Новичок в АН","Мотивация служащих"},
+                                    new KeyboardButton[] {"28.Лидерство в АН","Концепции АН"},
+                                    new KeyboardButton[] {"29.Комуникация и представительство"},
+                                    new KeyboardButton[] {"30.История появления литературы в России"},
+                                    new KeyboardButton[] {"31.История денег","История БТ"},
+                                    new KeyboardButton[] {"32.История АН"},
+                                    new KeyboardButton[] {"33.Информационная линия"},
+                                    new KeyboardButton[] {"34.Заместительная терапия и медикаментозное лечение"},
+                                    new KeyboardButton[] {"35.Единство в АН"},
+                                    new KeyboardButton[] {"36.Духовный кризис"},
+                                    new KeyboardButton[] {"37.Добро пожаловать всем (Традиция третья)"},
+                                    new KeyboardButton[] {"38.Добро пожаловать в АН"},
+                                    new KeyboardButton[] {"39.Служение как неотъемлемая часть выздоровления"},
+                                    new KeyboardButton[] {"40.Вдохновлённые нашей главной целью (Традиция пятая)"},
+                                    new KeyboardButton[] {"41.Выздоравливая в АН"},
+                                    new KeyboardButton[] {"42.Бог как каждый из нас понимает его"},
+                                    new KeyboardButton[] {"43.Атмосфера выздоровления в служении"},
+                                    new KeyboardButton[] {"44.12 Шагов АН"},
+                                    new KeyboardButton[] {"45.12 простых истин в служении АН"},
+                                    new KeyboardButton[] {"46.Выздоравливая в АН"},
+                                    new KeyboardButton[] {"47.Имидж АН"},
+                                    new KeyboardButton[] {"48.История БТ"},
+                                    new KeyboardButton[] {"47.Принцип ротации"},*//*
+                                    new KeyboardButton[] {"⬅️ПРС"},
+                })
+                    {
+                        ResizeKeyboard = true
+                    };
+                    await botClient.SendTextMessageAsync(message.Chat.Id, "Вы можете листать вниз", replyMarkup: keyboard);
+
+                    *//*await _botService.Client.SendTextMessageAsync(
+
+                        callbackQuery.Message.Chat.Id,
+                        $"Received {callbackQuery.Data}"
+                    ); *//*
+
+                    for (int i = 0; i < 8; i++)
+                    {
+                        //await botClient.SendTextMessageAsync(message.Chat.Id, seminarNamesArray[i]);
+                        if (message.Text == "Заказ семинаров")
+                        {
+                            string[] seminarRequest = new string[3];
+                            string nameSeminar = message.Text;
+                            seminarRequest[0] = nameSeminar;
+
+                            //int[,] myArr = new int[4, 5];
+
+                            //long someUserChatId = 000000000000;
+                            //await botClient.ForwardMessageAsync(idNeed, message.Chat.Id, message.MessageId);
+
+                            await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+                            "Выберите группу, диапазон времени.\n" +
+                            "Служащие РС с вами свяжутся в течении 3-ёх суток");
+
+                            ReplyKeyboardMarkup keyboardGroup = new(
+                                    new[]
+                                        {
+                                    new KeyboardButton[] {gruopNamesArray[0]},
+                                    new KeyboardButton[] {gruopNamesArray[1]},
+                                    new KeyboardButton[] {gruopNamesArray[2]},
+                                    new KeyboardButton[] {gruopNamesArray[3]},
+                                    new KeyboardButton[] {gruopNamesArray[4]},
+                                    new KeyboardButton[] {gruopNamesArray[5]},
+                                    new KeyboardButton[] {gruopNamesArray[6]},
+                                    new KeyboardButton[] {gruopNamesArray[7]},
+                                    new KeyboardButton[] {gruopNamesArray[8]},
+                            })
+                            {
+                                ResizeKeyboard = true
+                            };
+
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите группу:", replyMarkup: keyboardGroup);
+
+                            string nameGroup = message.Text;
+                            seminarRequest[1] = nameSeminar;
+
+                            ReplyKeyboardMarkup keyboardTime = new(
+                                        new[]
+                                            {
+                                        new KeyboardButton[] {timeNamesRequest[0]},
+                                        new KeyboardButton[] {timeNamesRequest[1]},
+                                        new KeyboardButton[] {timeNamesRequest[2]},
+                                        new KeyboardButton[] {timeNamesRequest[3]},
+                                        new KeyboardButton[] {timeNamesRequest[4]},
+                                        new KeyboardButton[] {timeNamesRequest[5]},
+                                        new KeyboardButton[] {timeNamesRequest[6]},
+                                        new KeyboardButton[] {timeNamesRequest[7]},
+                                        new KeyboardButton[] {timeNamesRequest[8]},
+                                        new KeyboardButton[] {timeNamesRequest[9]},
+                                        new KeyboardButton[] {timeNamesRequest[10]},
+                                        new KeyboardButton[] {"Заказ семинаров"},
+                                    })
+                            {
+                                ResizeKeyboard = true
+                            };
+                            await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите время:", replyMarkup: keyboardTime);
+                            *//*long someUserChatId = 000000000000;
+                            await botClient.ForwardMessageAsync(idNeed, message.Chat.Id, message.MessageId);
+    */
+    /* await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+     "Выберите группу, диапазон времени.\n" +
+     "Служащие РС с вами свяжутся в течении 3-ёх суток");*//*
+    return;
+}
+}
+
+return;
+}
+
+{
+
+
+*//*for (int i = 0; i < seminarNamesArray.Length; i++)
+{
+    if(message.Text == seminarNamesArray[i])
+    {
+        await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+    "Выберите группу, диапазон времени.\n" +
+    "Служащие РС с вами свяжутся в течении 3-ёх суток");
+
+        ReplyKeyboardMarkup keyboardGroup = new(
+                new[]
+                    {
+            new KeyboardButton[] {gruopNamesArray[0]},
+            new KeyboardButton[] {gruopNamesArray[1]},
+            new KeyboardButton[] {gruopNamesArray[2]},
+            new KeyboardButton[] {gruopNamesArray[3]},
+            new KeyboardButton[] {gruopNamesArray[4]},
+            new KeyboardButton[] {gruopNamesArray[5]},
+            new KeyboardButton[] {gruopNamesArray[6]},
+            new KeyboardButton[] {gruopNamesArray[7]},
+            new KeyboardButton[] {gruopNamesArray[8]},
+        })
+        {
+            ResizeKeyboard = true
+        };
+    }
+
+}*/
+
+    /*if (message.Text == "1.🔥РС- с чего начать?")
+    {
+        string[] seminarRequest = new string[3];
+        string nameSeminar = message.Text;
+        seminarRequest[0] = nameSeminar;
+
+        //int[,] myArr = new int[4, 5];
+
+        //long someUserChatId = 000000000000;
+        //await botClient.ForwardMessageAsync(idNeed, message.Chat.Id, message.MessageId);
+
+        await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+        "Выберите группу, диапазон времени.\n" +
+        "Служащие РС с вами свяжутся в течении 3-ёх суток");
+
+        ReplyKeyboardMarkup keyboardGroup = new(
+                new[]
+                    {
+                new KeyboardButton[] {gruopNamesArray[0]},
+                new KeyboardButton[] {gruopNamesArray[1]},
+                new KeyboardButton[] {gruopNamesArray[2]},
+                new KeyboardButton[] {gruopNamesArray[3]},
+                new KeyboardButton[] {gruopNamesArray[4]},
+                new KeyboardButton[] {gruopNamesArray[5]},
+                new KeyboardButton[] {gruopNamesArray[6]},
+                new KeyboardButton[] {gruopNamesArray[7]},
+                new KeyboardButton[] {gruopNamesArray[8]},
+        })
+        {
+            ResizeKeyboard = true
+        };
+
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите группу:", replyMarkup: keyboardGroup);
+        string nameGroup = message.Text;
+        seminarRequest[1] = nameSeminar;
+
+        ReplyKeyboardMarkup keyboardTime = new(
+                    new[]
+                        {
+                    new KeyboardButton[] {timeNamesRequest[0]},
+                    new KeyboardButton[] {timeNamesRequest[1]},
+                    new KeyboardButton[] {timeNamesRequest[2]},
+                    new KeyboardButton[] {timeNamesRequest[3]},
+                    new KeyboardButton[] {timeNamesRequest[4]},
+                    new KeyboardButton[] {timeNamesRequest[5]},
+                    new KeyboardButton[] {timeNamesRequest[6]},
+                    new KeyboardButton[] {timeNamesRequest[7]},
+                    new KeyboardButton[] {timeNamesRequest[8]},
+                    new KeyboardButton[] {timeNamesRequest[9]},
+                    new KeyboardButton[] {timeNamesRequest[10]},
+                    new KeyboardButton[] {"Заказ семинаров"},
+                })
+        {
+            ResizeKeyboard = true
+        };
+        await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите время:", replyMarkup: keyboardTime);
+
+        *//*for (int i = 0; i < timeNamesRequest.Length; i++)
+        {
+            if(message.Text == gruopNamesArray[i])
+            {
+
+            }
+        }*//*
+
+        string chosenTimeRequest = message.Text;
+
+        //string[] seminarRequest = new string[3] { nameSeminar, nameGroup, chosenTimeRequest };
+
+
+
+        *//*long someUserChatId_ = 000000000000;
+
+        for (int i = 0; i < seminarRequest.Length; i++)
+        {
+            await botClient.ForwardMessageAsync(708575698, message.Chat.Id, seminarRequest[i]);
+        }*//*
+
+        await botClient.ForwardMessageAsync(708575698, message.Chat.Id, message.MessageId);
+
+        return;
+
+
+        *//*
+        if (message.Text == "Хронь")
+        {
+            ReplyKeyboardMarkup keyboardTime = new(
+                new[]
+                    {
+                new KeyboardButton[] {"19:00-20:00"},
+                new KeyboardButton[] {"20:00-21:00"},
+
+        })
+            {
+                ResizeKeyboard = true
+            };
+            await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите время:", replyMarkup: keyboardTime);
+        }
+
+        {
+
+
+
+
+        long someUserChatId_ = 000000000000;
+            await botClient.ForwardMessageAsync(708575698, message.Chat.Id, message.MessageId);
+            return;
+        }*//*
+        //var chatMember = botClient.GetChatMemberAsync;
+        //await botClient.SendTextMessageAsync(someUserChatId, update.Message.Chat.Id, update.Message.MessageId);
+        *//*var message1 = await botClient.SendDocumentAsync(
+            chatId: 708575698,
+            document: "e:\\na\\cs_bot_an\\tg_bot_an_spb\\photo\\photo_2020-02-13-20.49.07.png");*/
+
+
+    /*await botClient.SendContactAsync(//Выдача контакта ! ???
+    chatId: message.Chat.Id,
+    phoneNumber: "+1234567890",
+    firstName: "Han",
+    lastName: "Solo");*//*
+}*/
+    /*
+
+}//Сравнение с ответом
+
+
+if (message.Text == "Заказать десант")
+{
+    await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+         "Выберите нужный город: \n");
+
+    ReplyKeyboardMarkup keyboard = new(
+        new[]
+            {
+                    new KeyboardButton[] {"⬅️ПРС"},
+                    new KeyboardButton[] {"Выборг"},
+                    new KeyboardButton[] {"Кудрово"},
+                    new KeyboardButton[] {"Петергоф"},
+                    new KeyboardButton[] {"п.Сосново"},
+                    new KeyboardButton[] {"Гатчина"},
+                    new KeyboardButton[] {"Всеволожск"},
+                    new KeyboardButton[] {"Мурино"},
+                    new KeyboardButton[] {"Кингисепп"},
+                    new KeyboardButton[] {"Красное село"},
+                    new KeyboardButton[] {"Сестрорецк"},
+                    new KeyboardButton[] {"Тихвин"},
+                    new KeyboardButton[] {"Коммунар"},
+                    new KeyboardButton[] {"Пушкин"},
+                    new KeyboardButton[] {"Сосновый Бор"},
+                    new KeyboardButton[] {"Сосново"},
+                    new KeyboardButton[] {"⬅️ПРС"},
+
+})
+    {
+        ResizeKeyboard = true
+    };
+    await botClient.SendTextMessageAsync(message.Chat.Id, "Вы можете листать вниз", replyMarkup: keyboard);
+
+    return;
+
+}
+
+if (message.Text == "Подключение к рассылке АН СПб")
+{
+    await botClient.SendTextMessageAsync(message.Chat.Id, // Напишет в чат 
+         "https://t.me/naspb12\n" +
+         "Перейдите ☝🏻\n");
+    return;
+}
+*//*async Task HandleCallbackQuery(ITelegramBotClient botClient, CallbackQuery callbackQuery)
+{
+    if (callbackQuery.Data.StartsWith("инфорфмацияРС"))
+    {
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            $"Главными целями Подкомитета по Развитию Сообщества являются:\n " +
+            $"Оказание помощи новым группам\n" +
+            $"Поддержка существующих групп АН в улучшении эффективности служения и несения вести АН\n" +
+            $"Содействовать развитию местности в целом"
+        );
+        return;
+
+
+    if (callbackQuery.Data.StartsWith("рассылка"))
+    {
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            $"Перейдите: https://t.me/naspb12"
+        );
+        return;
+    }
+
+    if (callbackQuery.Data.StartsWith("семинары"))
+    {
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            $"/1 Список проводимых семинаров:\n" +
+            $"/2 Ясность нашей вести\n" +
+            $"/3 Шаги АН\n" +
+            $"/4 Хищническое поведение в АН\n" +
+            $"/5 Фасилитатор\n" +
+            $"/6 Традиции АН\n" +
+            $"/7 Тёмная сторона в служении\n" +
+            $"/8 Структура обслуживания в Анм" +
+            $"/9 Стратегическое планированием" +
+            $"/10 Спонсорство\n" +
+            $"/11 Социальные сети\n" +
+            $"/12 Сопереживание, поддержка и любовь в сообществе\n" +
+            $"/13 СМИ, технологии и наши духовные принципым" +
+            $"/14 Служение ЧРК\n" +
+            $"/15 Служение как неотъемлемая часть выздоровления\n" +
+            $"/16 Служение в АН\n" +
+            $"/17 Семинары для ПГО\n" +
+            $"/18 Секретарь группы АН\n" +
+            $"/19 Самообеспечение от А до Я\n" +
+            $"/20 Самообеспечение в АН (традиция Седьмая)\n" +
+            $"/21 Руководящий принцип - дух наших традиций\n" +
+            $"/22 Руководство ЛитКомов\n" +
+            $"/23 РС- с чего начать?\n" +
+            $"/24 Развитие сообщества\n" +
+            $"/25 Простые истины в служении\n" +
+            $"/26 Про деньги\n" +
+            $"/27 Принцип ротации\n" +
+            $"/28 Привлечение членов сообщества в служение\n" +
+            $"/29 Планирование\n" +
+            $"/30 Открыть новую группу\n" +
+            $"/31 Новичок в АН\n" +
+            $"/32 Нести весть в АН и делать АН привлекательным\n" +
+            $"/33 Мотивация служащих\n" +
+            $"/34 Лидерство в АН\n" +
+            $"/35 Концепции АН\n" +
+            $"/36 Комуникация и представительство\n" +
+            $"/37 История появления литературы в России\n" +
+            $"/38 История денег\n" +
+            $"/39 История БТ\n" +
+            $"/40 История АН\n" +
+            $"Информационная линия\n" +
+            $"" +
+            $"Имидж АН\n" +
+            $"Заместительная терапия и медикаментозное лечение\n" +
+            $"Единство в АН\n" +
+            $"Духовный кризис\n" +
+            $"Добро пожаловать всем (Традиция третья)\n" +
+            $"Добро пожаловать в АН\n" +
+            $"Выздоравливая в АН\n" +
+            $"Ведущий собрания АН\n" +
+            $"Вдохновлённые нашей главной целью (Традиция пятая)\n" +
+            $"Бог как каждый из нас понимает его\n" +
+            $"" +
+            $"Атмосфера выздоровления в служении\n" +
+            $"12 Шагов АН\n" +
+            $"12 простых истин в служении АН\n"
+        );
+
+        // result: Message = await forward_message(...)
+        return;
+    }
+
+    if (callbackQuery.Data.StartsWith("тренинги"))
+    {
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            $"tren"
+        );
+        return;
+    }
+
+    if (callbackQuery.Data.StartsWith("десант"))
+    {
+        await botClient.SendTextMessageAsync(
+            callbackQuery.Message.Chat.Id,
+            $"десант"
+        );
+        return;
+    }
+
+    await botClient.SendTextMessageAsync(
+        callbackQuery.Message.Chat.Id,
+        $"You choose with data: {callbackQuery.Data}"
+        );
+
+    static void InformationAboutRsComunity()
+    {
+        Console.WriteLine
+            (
+                $"Главными целями Подкомитета по Развитию Сообщества являются:\n\n " +
+                $"Оказание помощи новым группам\n" +
+                $"Поддержка существующих групп АН в улучшении эффективности служения и несения вести АН\n" +
+                $"Содействовать развитию местности в целом"
+            );
+    }
+    return;
+}}*/
+
+    /* async Task GroupSelection(ITelegramBotClient botClient, Message message)
+     {
+         ReplyKeyboardMarkup keyboard = new(
+             new[]
+                 {
+                     new KeyboardButton[] {"Хронь"},
+                     new KeyboardButton[] {"Пробуждение"},
+     })
+         {
+             ResizeKeyboard = true
+         };
+         await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите группу:", replyMarkup: keyboard);
+         return;
+     }*/
+
+    /* async Task SeminarTimeSelection(ITelegramBotClient botClient, Message message)
+     {
+         ReplyKeyboardMarkup keyboard = new(
+             new[]
+                 {
+                     new KeyboardButton[] {"19:00-20:00"},
+                     new KeyboardButton[] {"20:00-21:00"},
+
+     })
+         {
+             ResizeKeyboard = true
+         };
+         await botClient.SendTextMessageAsync(message.Chat.Id, "Выберите диапазон времени:", replyMarkup: keyboard);
+         long someUserChatId = 000000000000;
+         await botClient.ForwardMessageAsync(708575698, message.Chat.Id, message.MessageId);
+         return;
+     }*//*
+
+    //Обработка ошибок
+
+
+    *//*  foreach (var update in updates)
+      {
+          var message = update.Message;
+
+          if(message.Text == "MyFirstBot")
+          {
+              Console.WriteLine("Получено сообщение:" + message.Text );
+              await bot.SendTextMessageAsync(message.Chat.Id, message.Text );
+          }
+          if(message.Text == "/reg")
+          {
+              Regisration(message.Chat.Id.ToString()), message.Chat.Username.ToString());
+              await bot.SendTextMessageAsync(message.Chat.Id, "Пользователь зарегистрирован");
+
+          }*//*
+      }*/
+
+
+
+
+
+
+
+
+
+
