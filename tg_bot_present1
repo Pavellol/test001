@@ -25,7 +25,7 @@ namespace TgBot
     {
         //public static SQLiteConnection DB; // Переменная для SQL
         public static ITelegramBotClient botClient { get; set; } =
-            new TelegramBotClient("5671400176:AAFVG9763O-Tq1YZM_5CEx6P12v3DL72qX0");
+            new TelegramBotClient("ThisTOKEN");
 
         static string[] rsMenu = new string[] { "🏆Заказ cеминаров", "ℹ️Информация о подкомитете", "🔌Подключиться к рассылке", "⬅️ПРС" };
         // семинары ПРС
